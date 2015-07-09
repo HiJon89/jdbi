@@ -41,6 +41,7 @@ class BatchHandler extends CustomizingStatementHandler
     private final String  sql;
     private final boolean transactional;
     private final ChunkSizeFunction batchChunkSize;
+    private boolean getGeneratedKeys;
 
     public BatchHandler(Class<?> sqlObjectType, ResolvedMethod method)
     {
@@ -50,6 +51,7 @@ class BatchHandler extends CustomizingStatementHandler
         this.sql = SqlObject.getSql(anno, raw_method);
         this.transactional = anno.transactional();
         this.batchChunkSize = determineBatchChunkSize(sqlObjectType, raw_method);
+        this.getGeneratedKeys = raw_method.isAnnotationPresent(GetGeneratedKeys.class);
     }
 
     private ChunkSizeFunction determineBatchChunkSize(Class<?> sqlObjectType, Method raw_method)
@@ -150,7 +152,7 @@ class BatchHandler extends CustomizingStatementHandler
             if (++processed == chunk_size) {
                 // execute this chunk
                 processed = 0;
-                rs_parts.add(executeBatch(handle, batch));
+                rs_parts.add(executeBatch(handle, batch, getGeneratedKeys));
                 batch = handle.prepareBatch(sql);
                 populateSqlObjectData((ConcreteStatementContext) batch.getContext());
                 applyCustomizers(batch, args);
@@ -158,7 +160,7 @@ class BatchHandler extends CustomizingStatementHandler
         }
 
         //execute the rest
-        rs_parts.add(executeBatch(handle, batch));
+        rs_parts.add(executeBatch(handle, batch, getGeneratedKeys));
 
         // combine results
         int end_size = 0;
@@ -175,7 +177,7 @@ class BatchHandler extends CustomizingStatementHandler
         return rs;
     }
 
-    private int[] executeBatch(final Handle handle, final PreparedBatch batch)
+    private int[] executeBatch(final Handle handle, final PreparedBatch batch, final boolean getGeneratedKeys)
     {
         if (!handle.isInTransaction() && transactional) {
             // it is safe to use same prepared batch as the inTransaction passes in the same
@@ -185,13 +187,18 @@ class BatchHandler extends CustomizingStatementHandler
                 @Override
                 public int[] inTransaction(Handle conn, TransactionStatus status) throws Exception
                 {
+                    if (getGeneratedKeys) {
+                        return batch.executeAndReturnGenerateKeys();
+                    }
                     return batch.execute();
                 }
             });
         }
-        else {
-            return batch.execute();
+
+        if (getGeneratedKeys) {
+            return batch.executeAndReturnGenerateKeys();
         }
+        return batch.execute();
     }
 
     private static Object[] next(List<Iterator> args)

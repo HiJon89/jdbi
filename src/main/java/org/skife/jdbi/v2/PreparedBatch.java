@@ -23,9 +23,11 @@ import org.skife.jdbi.v2.tweak.StatementBuilder;
 import org.skife.jdbi.v2.tweak.StatementCustomizer;
 import org.skife.jdbi.v2.tweak.StatementLocator;
 import org.skife.jdbi.v2.tweak.StatementRewriter;
+import org.skife.jdbi.v2.util.IntegerMapper;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -93,11 +95,35 @@ public class PreparedBatch extends SQLStatement<PreparedBatch>
      *
      * @return the number of rows modified or inserted per batch part.
      */
-    public int[] execute()
-    {
+    public int[] execute() {
+        return (int[]) internalBatchExecute(null);
+    }
+
+    public int[] executeAndReturnGenerateKeys() {
+        QueryResultMunger<GeneratedKeys<Integer>> munger = new QueryResultMunger<GeneratedKeys<Integer>>() {
+            public GeneratedKeys<Integer> munge(Statement results) throws SQLException {
+                return new GeneratedKeys<Integer>(IntegerMapper.FIRST,
+                    PreparedBatch.this,
+                    results,
+                    getContext(),
+                    getContainerMapperRegistry());
+            }
+        };
+
+        List<Integer> keysList = ((GeneratedKeys<Integer>) internalBatchExecute(munger)).list();
+        int[] keysArray = new int[keysList.size()];
+        for (int i = 0; i < keysList.size(); ++i) {
+            keysArray[i] = keysList.get(i);
+        }
+
+        return keysArray;
+    }
+
+    private <Result> Object internalBatchExecute(QueryResultMunger<Result> munger) {
+        boolean generateKeys = munger != null;
         // short circuit empty batch
-        if (parts.size() == 0) {
-            return new int[]{};
+        if (parts.isEmpty()) {
+            return new int[] {};
         }
 
         PreparedBatchPart current = parts.get(0);
@@ -113,7 +139,8 @@ public class PreparedBatch extends SQLStatement<PreparedBatch>
         PreparedStatement stmt = null;
         try {
             try {
-                stmt = getHandle().getConnection().prepareStatement(rewritten.getSql());
+                stmt = getHandle().getConnection().prepareStatement(rewritten.getSql(),
+                    generateKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
                 addCleanable(Cleanables.forStatement(stmt));
             }
             catch (SQLException e) {
@@ -142,7 +169,7 @@ public class PreparedBatch extends SQLStatement<PreparedBatch>
 
                 afterExecution(stmt);
 
-                return rs;
+                return generateKeys ? munger.munge(stmt) : rs;
             }
             catch (SQLException e) {
                 throw new UnableToExecuteStatementException(e, getContext());
@@ -150,7 +177,9 @@ public class PreparedBatch extends SQLStatement<PreparedBatch>
         }
         finally {
             try {
-                cleanup();
+                if (!generateKeys) {
+                    cleanup();
+                }
             }
             finally {
                 this.parts.clear();
