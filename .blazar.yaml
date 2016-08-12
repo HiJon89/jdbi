@@ -1,4 +1,4 @@
 enabled: true
 
 env:
-  SET_VERSION_OVERRIDE: 2.76-hubspot-SNAPSHOT
+  SKIP_VERSION_OVERRIDE: 1
