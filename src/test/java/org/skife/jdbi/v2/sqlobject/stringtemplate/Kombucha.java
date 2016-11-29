@@ -13,9 +13,10 @@
  */
 package org.skife.jdbi.v2.sqlobject.stringtemplate;
 
+import org.antlr.stringtemplate.StringTemplateErrorListener;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 
-@UseStringTemplate3StatementLocator(value = "/org/skife/jdbi/v2/sqlobject/stringtemplate/Kombucha.sql.stg", cacheable = true)
+@UseStringTemplate3StatementLocator(value = "/org/skife/jdbi/v2/sqlobject/stringtemplate/Kombucha.sql.stg", errorListener = StringTemplateErrorListener.class, cacheable = true)
 public interface Kombucha
 {
     @SqlQuery
