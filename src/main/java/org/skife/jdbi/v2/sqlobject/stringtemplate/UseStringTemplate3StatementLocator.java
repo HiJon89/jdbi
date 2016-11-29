@@ -40,8 +40,22 @@ public @interface UseStringTemplate3StatementLocator
     String DEFAULT_VALUE = " ~ ";
 
     String value() default DEFAULT_VALUE;
-    Class errorListener() default StringTemplateErrorListener.class;
+    Class errorListener() default DefaultTemplateErrorListener.class;
     boolean cacheable() default true;
+
+    class DefaultTemplateErrorListener implements StringTemplateErrorListener {
+
+        @Override
+        public void error(String msg, Throwable e) {
+            StringTemplateGroup.DEFAULT_ERROR_LISTENER.error(msg, e);
+            throw new RuntimeException(msg, e);
+        }
+
+        @Override
+        public void warning(String msg) {
+            StringTemplateGroup.DEFAULT_ERROR_LISTENER.warning(msg);
+        }
+    }
 
     class LocatorFactory implements SqlStatementCustomizerFactory
     {
