@@ -85,16 +85,15 @@ abstract class ResultReturnThing
                 SingleValueResult svr = method.getRawMember().getAnnotation(SingleValueResult.class);
                 // try to guess generic type
                 if(SingleValueResult.Default.class == svr.value()){
-                    TypeBindings typeBindings = method.getReturnType().getTypeBindings();
-                    if(typeBindings.size() == 1){
-                        this.returnType = typeBindings.getBoundType(0).getErasedType();
-                    }else{
-                        throw new IllegalArgumentException("Ambiguous generic information. SingleValueResult type could not be fetched.");
-                    }
-
+                    this.returnType = getSingleBoundReturnType(method);
                 }else{
                     this.returnType = svr.value();
                 }
+                this.containerType = method.getReturnType().getErasedType();
+            } else if (method.getReturnType().getErasedType().getName().equals("java.util.Optional")
+                    || method.getReturnType().getErasedType().getName().equals("com.google.common.base.Optional")
+            ) {
+                this.returnType = getSingleBoundReturnType(method);
                 this.containerType = method.getReturnType().getErasedType();
             }
             else {
@@ -102,6 +101,15 @@ abstract class ResultReturnThing
                 this.containerType = null;
             }
 
+        }
+
+        private static Class<?> getSingleBoundReturnType(ResolvedMethod method) {
+            TypeBindings typeBindings = method.getReturnType().getTypeBindings();
+            if(typeBindings.size() == 1){
+                 return typeBindings.getBoundType(0).getErasedType();
+            }else{
+                throw new IllegalArgumentException("Ambiguous generic information. SingleValueResult type could not be fetched.");
+            }
         }
 
         @Override

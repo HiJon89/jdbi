@@ -28,6 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -126,6 +127,23 @@ public class TestContainerFactory
     }
 
     @Test
+    public void testWithSqlObjectOptionalReturnValue() throws Exception
+    {
+        Dao dao = dbi.onDemand(Dao.class);
+        dao.insert(new Something(1, "Coda"));
+        dao.insert(new Something(2, "Brian"));
+
+        Optional<String> rs = dao.findNameByIdOptional(1);
+        assertThat(rs, equalTo(Optional.of("Coda")));
+
+        rs = dao.smartFindNameByIdOptional(1);
+        assertThat(rs, equalTo(Optional.of("Coda")));
+
+        rs = dao.inheritedGenericFindNameByIdOptional(1);
+        assertThat(rs, equalTo(Optional.of("Coda")));
+    }
+
+    @Test
     public void testWithSqlObjectSetReturnValue() throws Exception
     {
         Dao dao = dbi.onDemand(Dao.class);
@@ -137,7 +155,7 @@ public class TestContainerFactory
     }
 
 
-    @RegisterContainerMapper({ImmutableListContainerFactory.class, MaybeContainerFactory.class})
+    @RegisterContainerMapper({ImmutableListContainerFactory.class, MaybeContainerFactory.class, OptionalContainerFactory.class})
     public static interface Dao extends Base<String>
     {
         @SqlQuery("select name from something order by id")
@@ -154,8 +172,16 @@ public class TestContainerFactory
         public Maybe<String> findNameById(@Bind("id") int id);
 
         @SqlQuery("select name from something where id = :id")
+        @SingleValueResult(String.class)
+        public Optional<String> findNameByIdOptional(@Bind("id") int id);
+
+        @SqlQuery("select name from something where id = :id")
         @SingleValueResult
         public Maybe<String> smartFindNameById(@Bind("id") int id);
+
+        @SqlQuery("select name from something where id = :id")
+        @SingleValueResult
+        public Optional<String> smartFindNameByIdOptional(@Bind("id") int id);
     }
 
     public static interface Base<T>
@@ -163,6 +189,10 @@ public class TestContainerFactory
         @SqlQuery("select name from something where id = :id")
         @SingleValueResult
         public Maybe<T> inheritedGenericFindNameById(@Bind("id") int id);
+
+        @SqlQuery("select name from something where id = :id")
+        @SingleValueResult
+        public Optional<T> inheritedGenericFindNameByIdOptional(@Bind("id") int id);
     }
 
 
@@ -367,6 +397,38 @@ public class TestContainerFactory
             {
                 return theValue.hashCode();
             }
+        }
+    }
+
+    public static class OptionalContainerFactory implements ContainerFactory<Optional<?>>
+    {
+
+        @Override
+        public boolean accepts(Class<?> type)
+        {
+            return type.equals(Optional.class);
+        }
+
+        @Override
+        public ContainerBuilder<Optional<?>> newContainerBuilderFor(Class<?> type)
+        {
+            return new ContainerBuilder<Optional<?>>()
+            {
+                private Optional<Object> value = Optional.absent();
+
+                @Override
+                public ContainerBuilder<Optional<?>> add(Object it)
+                {
+                    value = value.or(Optional.of(it));
+                    return this;
+                }
+
+                @Override
+                public Optional<?> build()
+                {
+                    return value;
+                }
+            };
         }
     }
 
