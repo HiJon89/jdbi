@@ -1,1 +1,4 @@
 enabled: true
+
+env:
+  MAVEN_ARGS: -Dbasepom.check.skip-license=true
