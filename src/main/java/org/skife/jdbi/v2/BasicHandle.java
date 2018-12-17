@@ -52,6 +52,12 @@ class BasicHandle implements Handle
     private final TransactionHandler       transactions;
     private final Connection               connection;
 
+    private final ThreadLocal<SqlObjectContext> sqlObjectContext = new ThreadLocal<SqlObjectContext>() {
+        @Override
+        protected SqlObjectContext initialValue() {
+            return new SqlObjectContext();
+        }
+    };
 
     BasicHandle(TransactionHandler transactions,
                 StatementLocator statementLocator,
@@ -90,7 +96,7 @@ class BasicHandle implements Handle
                                               this,
                                               statementBuilder,
                                               sql,
-                                              new ConcreteStatementContext(globalStatementAttributes, queryRegistry),
+                                              new ConcreteStatementContext(globalStatementAttributes, queryRegistry, sqlObjectContext.get()),
                                               log,
                                               timingCollector,
                                               Collections.<StatementCustomizer>emptyList(),
@@ -113,6 +119,7 @@ class BasicHandle implements Handle
     @Override
     public void close()
     {
+        sqlObjectContext.remove();
         if (!closed) {
             try {
                 statementBuilder.close(getConnection());
@@ -258,7 +265,7 @@ class BasicHandle implements Handle
                           statementRewriter,
                           statementBuilder,
                           sql,
-                          new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry)),
+                          new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry), sqlObjectContext.get()),
                           log,
                           timingCollector,
                           foreman,
@@ -273,7 +280,7 @@ class BasicHandle implements Handle
                         statementRewriter,
                         statementBuilder,
                         sql,
-                        new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry)),
+                        new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry), sqlObjectContext.get()),
                         log,
                         timingCollector,
                         Collections.<StatementCustomizer>emptyList(),
@@ -306,7 +313,7 @@ class BasicHandle implements Handle
                                  this,
                                  statementBuilder,
                                  sql,
-                                 new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry)),
+                                 new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry), sqlObjectContext.get()),
                                  log,
                                  timingCollector,
                                  Collections.<StatementCustomizer>emptyList(),
@@ -319,7 +326,7 @@ class BasicHandle implements Handle
     {
         return new Batch(this.statementRewriter,
                          this.connection,
-                         new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry)),
+                         new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry), sqlObjectContext.get()),
                          log,
                          timingCollector,
                          foreman.createChild());
@@ -407,7 +414,7 @@ class BasicHandle implements Handle
     @Override
     public Script createScript(String name)
     {
-        return new Script(this, statementLocator, name, new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry)));
+        return new Script(this, statementLocator, name, new ConcreteStatementContext(globalStatementAttributes, new MappingRegistry(mappingRegistry), sqlObjectContext.get()));
     }
 
     @Override
@@ -486,5 +493,18 @@ class BasicHandle implements Handle
     public void registerContainerFactory(ContainerFactory<?> factory)
     {
         this.containerFactoryRegistry.register(factory);
+    }
+
+    @Override
+    public void setSqlObjectContext(SqlObjectContext context) {
+        if (context == null) {
+            throw new NullPointerException();
+        }
+        this.sqlObjectContext.set(context);
+    }
+
+    @Override
+    public SqlObjectContext getSqlObjectContext() {
+        return sqlObjectContext.get();
     }
 }

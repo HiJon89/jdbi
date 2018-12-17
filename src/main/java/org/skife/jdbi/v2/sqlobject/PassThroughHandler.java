@@ -28,14 +28,17 @@ class PassThroughHandler implements Handler
     }
 
     @Override
-    public Object invoke(HandleDing h, Object target, Object[] args, MethodProxy mp)
+    public Object invoke(HandleDing ding, Object target, Object[] args, MethodProxy mp)
     {
         try {
             return mp.invokeSuper(target, args);
         }
         catch (AbstractMethodError e) {
-            throw new AbstractMethodError("Method " + method.getDeclaringClass().getName() + "#" + method.getName() +
-                                               " doesn't make sense -- it probably needs a @Sql* annotation of some kind.");
+            AbstractMethodError error = new AbstractMethodError(
+                "Method " + method.getDeclaringClass().getName() + "#" + method.getName()
+                    + " doesn't make sense -- it probably needs a @Sql* annotation of some kind.");
+            error.initCause(e);
+            throw error;
         }
         catch (Throwable throwable) {
             /*

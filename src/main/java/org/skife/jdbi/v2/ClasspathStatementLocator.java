@@ -26,7 +26,6 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
 /**
@@ -172,6 +171,7 @@ public class ClasspathStatementLocator implements StatementLocator
             }
             catch (IOException e) {
                 // nothing we can do here :-(
+                e.printStackTrace();
             }
         }
     }
