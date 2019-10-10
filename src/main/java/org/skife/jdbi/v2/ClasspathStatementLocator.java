@@ -13,21 +13,20 @@
  */
 package org.skife.jdbi.v2;
 
-import org.antlr.runtime.ANTLRInputStream;
-import org.antlr.runtime.Token;
-import org.skife.jdbi.v2.exceptions.UnableToCreateStatementException;
-import org.skife.jdbi.v2.tweak.StatementLocator;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
+
+import org.antlr.runtime.ANTLRInputStream;
+import org.antlr.runtime.Token;
+import org.skife.jdbi.v2.exceptions.UnableToCreateStatementException;
+import org.skife.jdbi.v2.tweak.StatementLocator;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * looks for [name], then [name].sql on the classpath
@@ -170,7 +169,7 @@ public class ClasspathStatementLocator implements StatementLocator
                     in_stream.close();
                 }
             }
-            catch (IOException e) {
+            catch (IOException ignore) {
                 // nothing we can do here :-(
             }
         }
