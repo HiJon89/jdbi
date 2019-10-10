@@ -110,7 +110,7 @@ public class ClasspathStatementLocator implements StatementLocator
      */
     @Override
     @SuppressWarnings("PMD.EmptyCatchBlock")
-    @SuppressFBWarnings("DM_STRING_CTOR")
+    @SuppressFBWarnings({ "DM_STRING_CTOR", "DE_MIGHT_IGNORE" })
     public String locate(String name, StatementContext ctx)
     {
         final CacheKey cache_key = new CacheKey(name, ctx.getSqlObjectType(), ctx.getSqlObjectMethod());
@@ -169,7 +169,7 @@ public class ClasspathStatementLocator implements StatementLocator
                     in_stream.close();
                 }
             }
-            catch (IOException ignore) {
+            catch (IOException e) {
                 // nothing we can do here :-(
             }
         }
