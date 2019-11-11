@@ -13,14 +13,15 @@
  */
 package org.skife.jdbi.v2;
 
-import org.skife.jdbi.v2.tweak.Argument;
-import org.skife.jdbi.v2.tweak.NamedArgumentFinder;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.skife.jdbi.v2.tweak.Argument;
+import org.skife.jdbi.v2.tweak.NamedArgumentFinder;
 
 /**
  * Represents the arguments bound to a particular statement
@@ -114,6 +115,18 @@ public class Binding
 
         b.append("}");
         return b.toString();
+    }
+
+    public Map<Integer, Argument> getPositionalArguments() {
+        return Collections.unmodifiableMap(positionals);
+    }
+
+    public Map<String, Argument> getNamedArguments() {
+        return Collections.unmodifiableMap(named);
+    }
+
+    public List<NamedArgumentFinder> getNamedArgumentFinders() {
+        return Collections.unmodifiableList(namedArgumentFinder);
     }
 
     public void clear()
