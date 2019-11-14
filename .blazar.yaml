@@ -1,4 +1,4 @@
 enabled: true
 
 env:
-  SKIP_VERSION_OVERRIDE: 1
+  SKIP_VERSION_OVERRIDE_ON_BRANCH: hubspot
