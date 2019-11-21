@@ -94,7 +94,7 @@
         <dependency>
             <groupId>cglib</groupId>
             <artifactId>cglib</artifactId>
-            <version>3.2.2</version>
+            <version>3.3.0</version>
         </dependency>
 
         <dependency>
@@ -243,7 +243,7 @@
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>
-                <version>5.1</version>
+                <version>7.2</version>
             </dependency>
 
             <dependency>
@@ -349,24 +349,12 @@
                                 <includes>
                                     <include>org.antlr:antlr-runtime</include>
                                     <include>com.fasterxml:classmate</include>
-                                    <include>cglib:cglib</include>
-                                    <include>org.ow2.asm:asm</include>
                                 </includes>
                             </artifactSet>
                             <relocations>
                                 <relocation>
                                     <pattern>org.antlr.runtime</pattern>
                                     <shadedPattern>org.skife.jdbi.org.antlr.runtime</shadedPattern>
-                                </relocation>
-
-                                <relocation>
-                                    <pattern>net.sf.cglib</pattern>
-                                    <shadedPattern>org.skife.jdbi.cglib</shadedPattern>
-                                </relocation>
-
-                                <relocation>
-                                    <pattern>org.objectweb.asm</pattern>
-                                    <shadedPattern>org.skife.jdbi.asm</shadedPattern>
                                 </relocation>
 
                                 <relocation>

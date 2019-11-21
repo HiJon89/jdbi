@@ -2,3 +2,4 @@ enabled: true
 
 env:
   MAVEN_ARGS: -Dbasepom.check.skip-license=true
+  SKIP_VERSION_OVERRIDE_ON_BRANCH: hubspot
