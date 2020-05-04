@@ -13,6 +13,11 @@
  */
 package org.skife.jdbi.v2.sqlobject;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+
+import java.util.UUID;
+
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.After;
 import org.junit.Before;
@@ -25,13 +30,16 @@ import org.skife.jdbi.v2.sqlobject.customizers.OverrideStatementLocatorWith;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.StringTemplate3StatementLocator;
 
-import java.util.UUID;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-
 public class TestOverrideStatementLocatorWith
 {
+    private enum Table {
+        something
+    }
+
+    private enum Column {
+        id, name
+    }
+
     private Handle handle;
 
     @Before
@@ -85,7 +93,7 @@ public class TestOverrideStatementLocatorWith
     @Test
     public void testDefines() throws Exception
     {
-        handle.attach(Kangaroo.class).weirdInsert("something", "id", "name", 5, "Bouncer");
+        handle.attach(Kangaroo.class).weirdInsert(Table.something, Column.id, Column.name, 5, "Bouncer");
         String name = handle.createQuery("select name from something where id = 5")
                             .mapTo(String.class)
                             .first();
@@ -108,9 +116,9 @@ public class TestOverrideStatementLocatorWith
         String findNameFor(@Bind int id);
 
         @SqlUpdate
-        void weirdInsert(@Define("table") String table,
-                         @Define("id_column") String idColumn,
-                         @Define("value_column") String valueColumn,
+        void weirdInsert(@Define("table") Table table,
+                         @Define("id_column") Column idColumn,
+                         @Define("value_column") Column valueColumn,
                          @Bind("id") int id,
                          @Bind("value") String name);
     }

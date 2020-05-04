@@ -13,14 +13,6 @@
  */
 package org.skife.jdbi.v2.sqlobject.customizers;
 
-import org.skife.jdbi.v2.ClasspathStatementLocator;
-import org.skife.jdbi.v2.SQLStatement;
-import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizer;
-import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizerFactory;
-import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizingAnnotation;
-import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator.LocatorFactory;
-import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocatorImpl;
-
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -28,6 +20,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.skife.jdbi.v2.ClasspathStatementLocator;
+import org.skife.jdbi.v2.SQLStatement;
+import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizer;
+import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizerFactory;
+import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizingAnnotation;
+import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator.LocatorFactory;
+import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocatorImpl;
 
 /**
  * Used to set attributes on the StatementContext for the statement generated for this method.
@@ -45,6 +48,20 @@ public @interface Define
 
     class Factory implements SqlStatementCustomizerFactory
     {
+        private static final Set<Class<?>> ALLOWED_ARG_TYPES = new HashSet<Class<?>>(
+            Arrays.asList(
+                Boolean.class,
+                Character.class,
+                Byte.class,
+                Short.class,
+                Integer.class,
+                Long.class,
+                Float.class,
+                Double.class,
+                Void.class
+            )
+        );
+
         @Override
         public SqlStatementCustomizer createForType(Annotation annotation, Class sqlObjectType)
         {
@@ -60,6 +77,10 @@ public @interface Define
         @Override
         public SqlStatementCustomizer createForParameter(Annotation annotation, final Class sqlObjectType, Method method, final Object arg)
         {
+            if (!allowedArg(arg)) {
+                throw new IllegalArgumentException("Disallowed @Define argument " + arg);
+            }
+
             Define d = (Define) annotation;
             final String key = d.value();
             return new SqlStatementCustomizer()
@@ -73,6 +94,19 @@ public @interface Define
                     }
                 }
             };
+        }
+
+        private static boolean allowedArg(Object arg) {
+            if (arg == null) {
+                return true;
+            }
+
+            Class<?> argType = arg.getClass();
+            if (argType.isEnum() || argType.isPrimitive()) {
+                return true;
+            }
+
+            return ALLOWED_ARG_TYPES.contains(argType);
         }
     }
 }
