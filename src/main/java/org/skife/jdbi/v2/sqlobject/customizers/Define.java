@@ -58,7 +58,8 @@ public @interface Define
                 Long.class,
                 Float.class,
                 Double.class,
-                Void.class
+                Void.class,
+                String.class
             )
         );
 
@@ -77,8 +78,16 @@ public @interface Define
         @Override
         public SqlStatementCustomizer createForParameter(Annotation annotation, final Class sqlObjectType, Method method, final Object arg)
         {
-            if (!allowedArg(arg)) {
-                throw new IllegalArgumentException("Disallowed @Define argument " + arg);
+            validateArgType(arg);
+
+            final Object validatedArg;
+
+            if (arg instanceof String) {
+                String argString = (String) arg;
+                validateArgString(argString);
+                validatedArg = '`' + argString + "`";
+            } else {
+                validatedArg = arg;
             }
 
             Define d = (Define) annotation;
@@ -88,7 +97,7 @@ public @interface Define
                 @Override
                 public void apply(SQLStatement q) throws SQLException
                 {
-                    q.define(key, arg);
+                    q.define(key, validatedArg);
                     if (q.getStatementLocator() instanceof ClasspathStatementLocator) {
                         new LocatorFactory().createForType(UseStringTemplate3StatementLocatorImpl.defaultInstance(), sqlObjectType).apply(q);
                     }
@@ -96,17 +105,32 @@ public @interface Define
             };
         }
 
-        private static boolean allowedArg(Object arg) {
+        private static void validateArgType(Object arg) {
             if (arg == null) {
-                return true;
+                return;
             }
 
             Class<?> argType = arg.getClass();
             if (argType.isEnum() || argType.isPrimitive()) {
-                return true;
+                return;
             }
 
-            return ALLOWED_ARG_TYPES.contains(argType);
+            if (!ALLOWED_ARG_TYPES.contains(argType)) {
+                throw new IllegalArgumentException("Disallowed @Define argument type " + arg);
+            }
+        }
+
+        /**
+         * Requires ascii letter or digit
+         */
+        private static void validateArgString(String argString) {
+            for (char c : argString.toCharArray()) {
+                if (c < 32 || c > 127 || !Character.isLetterOrDigit(c)) {
+                    throw new IllegalArgumentException(
+                        "Disallowed character " + c + " in @Define argument " + argString
+                    );
+                }
+            }
         }
     }
 }

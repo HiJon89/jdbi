@@ -31,14 +31,6 @@ import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLoc
 
 public class TestStringTemplate3Locator
 {
-    private enum Table {
-        something
-    }
-
-    private enum Column {
-        id, name
-    }
-
     private Handle handle;
 
     @Before
@@ -90,8 +82,8 @@ public class TestStringTemplate3Locator
     @Test
     public void testDefines() throws Exception
     {
-        handle.attach(Wombat.class).weirdInsert(Table.something, Column.id, Column.name, 5, "Bouncer");
-        handle.attach(Wombat.class).weirdInsert(Table.something, Column.id, Column.name, 6, "Bean");
+        handle.attach(Wombat.class).weirdInsert("something", "id", "name", 5, "Bouncer");
+        handle.attach(Wombat.class).weirdInsert("something", "id", "name", 6, "Bean");
         String name = handle.createQuery("select name from something where id = 5")
                             .mapTo(String.class)
                             .first();
@@ -115,8 +107,8 @@ public class TestStringTemplate3Locator
     {
         HoneyBadger badass = handle.attach(HoneyBadger.class);
 
-        badass.insert(Table.something, new Something(1, "Ted"));
-        badass.insert(Table.something, new Something(2, "Fred"));
+        badass.insert("something", new Something(1, "Ted"));
+        badass.insert("something", new Something(2, "Fred"));
     }
 
     @UseStringTemplate3StatementLocator
@@ -124,10 +116,10 @@ public class TestStringTemplate3Locator
     static interface HoneyBadger
     {
         @SqlUpdate("insert into <table> (id, name) values (:id, :name)")
-        public void insert(@Define("table") Table table, @BindBean Something s);
+        public void insert(@Define("table") String table, @BindBean Something s);
 
         @SqlQuery("select id, name from <table> where id = :id")
-        public Something findById(@Define("table") Table table, @Bind("id") Long id);
+        public Something findById(@Define("table") String table, @Bind("id") Long id);
     }
 
     @ExternalizedSqlViaStringTemplate3
@@ -144,9 +136,9 @@ public class TestStringTemplate3Locator
         String findNameFor(@Bind int id);
 
         @SqlUpdate
-        void weirdInsert(@Define("table") Table table,
-                         @Define("id_column") Column idColumn,
-                         @Define("value_column") Column valueColumn,
+        void weirdInsert(@Define("table") String table,
+                         @Define("id_column") String idColumn,
+                         @Define("value_column") String valueColumn,
                          @Bind("id") int id,
                          @Bind("value") String name);
 
