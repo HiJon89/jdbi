@@ -80,16 +80,6 @@ public @interface Define
         {
             validateArgType(arg);
 
-            final Object validatedArg;
-
-            if (arg instanceof String) {
-                String argString = (String) arg;
-                validateArgString(argString);
-                validatedArg = '`' + argString + "`";
-            } else {
-                validatedArg = arg;
-            }
-
             Define d = (Define) annotation;
             final String key = d.value();
             return new SqlStatementCustomizer()
@@ -97,7 +87,7 @@ public @interface Define
                 @Override
                 public void apply(SQLStatement q) throws SQLException
                 {
-                    q.define(key, validatedArg);
+                    q.define(key, validateArg(arg, q));
                     if (q.getStatementLocator() instanceof ClasspathStatementLocator) {
                         new LocatorFactory().createForType(UseStringTemplate3StatementLocatorImpl.defaultInstance(), sqlObjectType).apply(q);
                     }
@@ -118,6 +108,26 @@ public @interface Define
             if (!ALLOWED_ARG_TYPES.contains(argType)) {
                 throw new IllegalArgumentException("Disallowed @Define argument type " + arg);
             }
+        }
+
+        private static Object validateArg(Object arg, SQLStatement q) throws SQLException {
+            if (arg instanceof String) {
+                String argString = (String) arg;
+                validateArgString(argString);
+
+                // MySQL uses backticks, everyone else uses double-quotes
+                if (isMySQL(q)) {
+                    return '`' + argString + '`';
+                } else {
+                    return '"' + argString + '"';
+                }
+            } else {
+                return arg;
+            }
+        }
+
+        private static boolean isMySQL(SQLStatement q) throws SQLException {
+            return q.getContext().getConnection().getMetaData().getDatabaseProductName().contains("MySQL");
         }
 
         /**

@@ -1,11 +1,11 @@
 group Wombat;
 
 kangaroo(name) ::= << hello <name> >>
-insert() ::= << insert into something (id, name) values (:id, :name) >>
-findById() ::= << select id, name from something where id = :id >>
+insert() ::= << insert into SOMETHING (ID, NAME) values (:id, :name) >>
+findById() ::= << select ID, NAME from SOMETHING where ID = :id >>
 weirdInsert(table, id_column, value_column) ::= <<
     insert into <table> (<id_column>, <value_column>) values (:id, :value)
 >>
 insertBunches() ::= <<
-    insert into something (id, name) values (:id, :name)
+    insert into SOMETHING (ID, NAME) values (:id, :name)
 >>

@@ -39,13 +39,13 @@ public class TestStringTemplate3Locator
         DBI dbi = new DBI("jdbc:h2:mem:" + UUID.randomUUID());
         handle = dbi.open();
 
-        handle.execute("create table something (id int primary key, name varchar(100))");
+        handle.execute("create table SOMETHING (ID int primary key, NAME varchar(100))");
     }
 
     @After
     public void tearDown() throws Exception
     {
-        handle.execute("drop table something");
+        handle.execute("drop table SOMETHING");
         handle.close();
     }
 
@@ -55,7 +55,7 @@ public class TestStringTemplate3Locator
         Wombat wombat = handle.attach(Wombat.class);
         wombat.insert(new Something(7, "Henning"));
 
-        String name = handle.createQuery("select name from something where id = 7")
+        String name = handle.createQuery("select NAME from SOMETHING where ID = 7")
                             .mapTo(String.class)
                             .first();
 
@@ -65,7 +65,7 @@ public class TestStringTemplate3Locator
     @Test
     public void testBam() throws Exception
     {
-        handle.execute("insert into something (id, name) values (6, 'Martin')");
+        handle.execute("insert into SOMETHING (ID, NAME) values (6, 'Martin')");
 
         Something s = handle.attach(Wombat.class).findById(6L);
         assertThat(s.getName(), equalTo("Martin"));
@@ -74,7 +74,7 @@ public class TestStringTemplate3Locator
     @Test
     public void testBap() throws Exception
     {
-        handle.execute("insert into something (id, name) values (2, 'Bean')");
+        handle.execute("insert into SOMETHING (ID, NAME) values (2, 'Bean')");
         Wombat w = handle.attach(Wombat.class);
         assertThat(w.findNameFor(2), equalTo("Bean"));
     }
@@ -82,9 +82,9 @@ public class TestStringTemplate3Locator
     @Test
     public void testDefines() throws Exception
     {
-        handle.attach(Wombat.class).weirdInsert("something", "id", "name", 5, "Bouncer");
-        handle.attach(Wombat.class).weirdInsert("something", "id", "name", 6, "Bean");
-        String name = handle.createQuery("select name from something where id = 5")
+        handle.attach(Wombat.class).weirdInsert("SOMETHING", "ID", "NAME", 5, "Bouncer");
+        handle.attach(Wombat.class).weirdInsert("SOMETHING", "ID", "NAME", 6, "Bean");
+        String name = handle.createQuery("select NAME from SOMETHING where ID = 5")
                             .mapTo(String.class)
                             .first();
 
@@ -107,18 +107,18 @@ public class TestStringTemplate3Locator
     {
         HoneyBadger badass = handle.attach(HoneyBadger.class);
 
-        badass.insert("something", new Something(1, "Ted"));
-        badass.insert("something", new Something(2, "Fred"));
+        badass.insert("SOMETHING", new Something(1, "Ted"));
+        badass.insert("SOMETHING", new Something(2, "Fred"));
     }
 
     @UseStringTemplate3StatementLocator
     @RegisterMapper(SomethingMapper.class)
     static interface HoneyBadger
     {
-        @SqlUpdate("insert into <table> (id, name) values (:id, :name)")
+        @SqlUpdate("insert into <table> (ID, NAME) values (:id, :name)")
         public void insert(@Define("table") String table, @BindBean Something s);
 
-        @SqlQuery("select id, name from <table> where id = :id")
+        @SqlQuery("select ID, NAME from <table> where ID = :id")
         public Something findById(@Define("table") String table, @Bind("id") Long id);
     }
 
@@ -132,7 +132,7 @@ public class TestStringTemplate3Locator
         @SqlQuery
         public Something findById(@Bind("id") Long id);
 
-        @SqlQuery("select name from something where id = :it")
+        @SqlQuery("select NAME from SOMETHING where ID = :it")
         String findNameFor(@Bind int id);
 
         @SqlUpdate
