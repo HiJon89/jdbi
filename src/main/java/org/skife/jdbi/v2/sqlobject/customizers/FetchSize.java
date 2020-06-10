@@ -18,8 +18,7 @@ import org.skife.jdbi.v2.SQLStatement;
 import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizer;
 import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizerFactory;
 import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizingAnnotation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
@@ -34,7 +33,7 @@ import java.sql.SQLException;
 @SqlStatementCustomizingAnnotation(FetchSize.Factory.class)
 public @interface FetchSize
 {
-    Logger LOG = LoggerFactory.getLogger(FetchSize.class);
+    Logger LOG = Logger.getLogger(FetchSize.class);
 
     String VITESS_STREAMING_WARNING = "Warning: streaming reads to Vitess do not " +
         "inherit transactional context. You will not be able to read your writes.";
