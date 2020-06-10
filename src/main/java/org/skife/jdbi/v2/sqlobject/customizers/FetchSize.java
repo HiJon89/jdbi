@@ -44,12 +44,6 @@ public @interface FetchSize
     class Factory implements SqlStatementCustomizerFactory
     {
 
-        private void logIfStreamingInTransaction(SQLStatement q, FetchSize fetchSize) throws SQLException {
-            if (fetchSize.value() > 0 && !q.getContext().getConnection().getAutoCommit()) {
-                LOG.error(VITESS_STREAMING_WARNING);
-            }
-        }
-
         @Override
         public SqlStatementCustomizer createForMethod(Annotation annotation, Class sqlObjectType, Method method)
         {
@@ -95,6 +89,12 @@ public @interface FetchSize
                     ((Query) q).setFetchSize(va);
                 }
             };
+        }
+
+        private void logIfStreamingInTransaction(SQLStatement q, FetchSize fetchSize) throws SQLException {
+            if (fetchSize.value() > 0 && !q.getContext().getConnection().getAutoCommit()) {
+                LOG.error(VITESS_STREAMING_WARNING);
+            }
         }
     }
 }
