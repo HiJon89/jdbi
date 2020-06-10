@@ -18,6 +18,8 @@ import org.skife.jdbi.v2.SQLStatement;
 import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizer;
 import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizerFactory;
 import org.skife.jdbi.v2.sqlobject.SqlStatementCustomizingAnnotation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
@@ -32,10 +34,22 @@ import java.sql.SQLException;
 @SqlStatementCustomizingAnnotation(FetchSize.Factory.class)
 public @interface FetchSize
 {
+    Logger LOG = LoggerFactory.getLogger(FetchSize.class);
+
+    String VITESS_STREAMING_WARNING = "Warning: streaming reads to Vitess do not " +
+        "inherit transactional context. You will not be able to read your writes.";
+
     int value() default 0;
 
     class Factory implements SqlStatementCustomizerFactory
     {
+
+        private void logIfStreamingInTransaction(SQLStatement q, FetchSize fetchSize) throws SQLException {
+            if (fetchSize.value() > 0 && !q.getContext().getConnection().getAutoCommit()) {
+                LOG.error(VITESS_STREAMING_WARNING);
+            }
+        }
+
         @Override
         public SqlStatementCustomizer createForMethod(Annotation annotation, Class sqlObjectType, Method method)
         {
@@ -46,6 +60,7 @@ public @interface FetchSize
                 public void apply(SQLStatement q) throws SQLException
                 {
                     assert q instanceof Query;
+                    logIfStreamingInTransaction(q, fs);
                     ((Query) q).setFetchSize(fs.value());
                 }
             };
@@ -61,6 +76,7 @@ public @interface FetchSize
                 public void apply(SQLStatement q) throws SQLException
                 {
                     assert q instanceof Query;
+                    logIfStreamingInTransaction(q, fs);
                     ((Query) q).setFetchSize(fs.value());
                 }
             };
@@ -76,6 +92,7 @@ public @interface FetchSize
                 public void apply(SQLStatement q) throws SQLException
                 {
                     assert q instanceof Query;
+                    logIfStreamingInTransaction(q, fs);
                     ((Query) q).setFetchSize(va);
                 }
             };
