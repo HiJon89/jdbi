@@ -92,7 +92,6 @@ public @interface FetchSize
                 public void apply(SQLStatement q) throws SQLException
                 {
                     assert q instanceof Query;
-                    logIfStreamingInTransaction(q, fs);
                     ((Query) q).setFetchSize(va);
                 }
             };
