@@ -50,7 +50,11 @@ public class TestGetGeneratedKeysHsqlDb {
 
         @SqlBatch("insert into something (name) values (:it)")
         @GetGeneratedKeys
-        public int[] insert(@Bind List<String> names);
+        public int[] insertReturnIntArray(@Bind List<String> names);
+
+        @SqlBatch("insert into something (name) values (:it)")
+        @GetGeneratedKeys(getReturnType = "long")
+        public long[] insertReturnLongArray(@Bind List<String> names);
 
         @SqlQuery("select name from something where id = :it")
         public String findNameById(@Bind long id);
@@ -74,7 +78,7 @@ public class TestGetGeneratedKeysHsqlDb {
     {
         DAO dao = dbi.open(DAO.class);
 
-        int[] ids = dao.insert(Arrays.asList("Burt", "Macklin"));
+        int[] ids = dao.insertReturnIntArray(Arrays.asList("Burt", "Macklin"));
 
         assertThat(dao.findNameById(ids[0]), equalTo("Burt"));
         assertThat(dao.findNameById(ids[1]), equalTo("Macklin"));
@@ -82,4 +86,17 @@ public class TestGetGeneratedKeysHsqlDb {
         dao.close();
     }
 
+
+    @Test
+    public void testBatchWithLongArray() throws Exception
+    {
+        DAO dao = dbi.open(DAO.class);
+
+        long[] ids = dao.insertReturnLongArray(Arrays.asList("Burt", "Macklin"));
+
+        assertThat(dao.findNameById(ids[0]), equalTo("Burt"));
+        assertThat(dao.findNameById(ids[1]), equalTo("Macklin"));
+
+        dao.close();
+    }
 }
