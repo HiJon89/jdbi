@@ -70,17 +70,7 @@ class BatchHandler extends CustomizingStatementHandler
             longReturner = null;
         }
         else if (getGeneratedKeys.columnName().isEmpty()) {
-            if (getGeneratedKeys.getReturnType().equals(Integer.TYPE.getName())) {
-                integerReturner = new IntegerReturner()
-                {
-                    @Override
-                    public int[] value(PreparedBatch batch)
-                    {
-                        return toPrimitiveArray(batch.executeAndGenerateKeys(IntegerColumnMapper.PRIMITIVE).list());
-                    }
-                };
-                longReturner = null;
-            } else {
+            if (method.getReturnType().getErasedType().equals(long[].class)) {
                 longReturner = new LongReturner()
                 {
                     @Override
@@ -90,19 +80,42 @@ class BatchHandler extends CustomizingStatementHandler
                     }
                 };
                 integerReturner = null;
+            } else {
+                integerReturner = new IntegerReturner()
+                {
+                    @Override
+                    public int[] value(PreparedBatch batch)
+                    {
+                        return toPrimitiveArray(batch.executeAndGenerateKeys(IntegerColumnMapper.PRIMITIVE).list());
+                    }
+                };
+                longReturner = null;
             }
         }
         else {
-            integerReturner = new IntegerReturner()
-            {
-                @Override
-                public int[] value(PreparedBatch batch)
+            if (method.getReturnType().getErasedType().equals(long[].class)) {
+                longReturner = new LongReturner()
                 {
-                    String columnName = getGeneratedKeys.columnName();
-                    return toPrimitiveArray(batch.executeAndGenerateKeys(IntegerColumnMapper.PRIMITIVE, columnName).list());
-                }
-            };
-            longReturner = null;
+                    @Override
+                    public long[] value(PreparedBatch batch)
+                    {
+                        String columnName = getGeneratedKeys.columnName();
+                        return toPrimitiveLongArray(batch.executeAndGenerateKeys(LongColumnMapper.PRIMITIVE, columnName).list());
+                    }
+                };
+                integerReturner = null;
+            } else {
+                integerReturner = new IntegerReturner()
+                {
+                    @Override
+                    public int[] value(PreparedBatch batch)
+                    {
+                        String columnName = getGeneratedKeys.columnName();
+                        return toPrimitiveArray(batch.executeAndGenerateKeys(IntegerColumnMapper.PRIMITIVE, columnName).list());
+                    }
+                };
+                longReturner = null;
+            }
         }
     }
 

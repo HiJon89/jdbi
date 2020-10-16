@@ -53,7 +53,7 @@ public class TestGetGeneratedKeysHsqlDb {
         public int[] insertReturnIntArray(@Bind List<String> names);
 
         @SqlBatch("insert into something (name) values (:it)")
-        @GetGeneratedKeys(getReturnType = "long")
+        @GetGeneratedKeys
         public long[] insertReturnLongArray(@Bind List<String> names);
 
         @SqlQuery("select name from something where id = :it")

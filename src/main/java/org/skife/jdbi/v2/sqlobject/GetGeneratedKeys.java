@@ -25,6 +25,5 @@ import java.lang.annotation.Target;
 public @interface GetGeneratedKeys
 {
     String columnName() default "";
-    String getReturnType() default "int";
     Class<? extends ResultSetMapper> value() default FigureItOutResultSetMapper.class;
 }

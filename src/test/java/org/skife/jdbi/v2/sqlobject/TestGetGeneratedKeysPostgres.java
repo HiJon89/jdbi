@@ -74,8 +74,8 @@ public class TestGetGeneratedKeysPostgres
         @GetGeneratedKeys(columnName = "id")
         public int[] insert(@Bind("name") List<String> names);
 
-        @SqlBatch("insert into something (name) values (:it)")
-        @GetGeneratedKeys(getReturnType = "long")
+        @SqlBatch("insert into something (name, id) values (:name, nextval('id_sequence'))")
+        @GetGeneratedKeys(columnName = "id")
         public long[] insertReturnLongArray(@Bind List<String> names);
 
         @SqlQuery("select name from something where id = :it")
@@ -111,7 +111,7 @@ public class TestGetGeneratedKeysPostgres
     @Test
     public void testBatchWithLongArray() throws Exception
     {
-        TestGetGeneratedKeysHsqlDb.DAO dao = dbi.open(TestGetGeneratedKeysHsqlDb.DAO.class);
+        DAO dao = dbi.open(DAO.class);
 
         long[] ids = dao.insertReturnLongArray(Arrays.asList("Burt", "Macklin"));
 
