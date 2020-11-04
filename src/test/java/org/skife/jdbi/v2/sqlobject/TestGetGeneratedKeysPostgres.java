@@ -78,7 +78,12 @@ public class TestGetGeneratedKeysPostgres
         @GetGeneratedKeys(columnName = "id")
         public long[] insertReturnLongArray(@Bind List<String> names);
 
+        @SqlBatch("insert into something (name, id) values (:name, nextval('id_sequence'))")
+        @GetGeneratedKeys(columnName = "id")
+        public void insertReturnVoid(@Bind List<String> names);
+
         @SqlQuery("select name from something where id = :it")
+        @GetGeneratedKeys(columnName = "id")
         public String findNameById(@Bind long id);
     }
 
@@ -117,6 +122,16 @@ public class TestGetGeneratedKeysPostgres
 
         assertThat(dao.findNameById(ids[0]), equalTo("Burt"));
         assertThat(dao.findNameById(ids[1]), equalTo("Macklin"));
+
+        dao.close();
+    }
+
+    @Test
+    public void testVoidGeneratedKeys() throws Exception
+    {
+        DAO dao = dbi.open(DAO.class);
+
+        dao.insertReturnVoid(Arrays.asList("Burt", "Macklin"));
 
         dao.close();
     }
