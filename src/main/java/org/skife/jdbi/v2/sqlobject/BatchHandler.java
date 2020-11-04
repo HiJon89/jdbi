@@ -35,6 +35,7 @@ import org.skife.jdbi.v2.sqlobject.batch.BatchAccumulator;
 import org.skife.jdbi.v2.sqlobject.batch.BatchReturner;
 import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
 
+import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.members.ResolvedMethod;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -62,12 +63,13 @@ class BatchHandler extends CustomizingStatementHandler
 
     private static BatchReturner<?> newBatchReturner(ResolvedMethod method) {
         GetGeneratedKeys getGeneratedKeys = method.getRawMember().getAnnotation(GetGeneratedKeys.class);
+        ResolvedType returnType = method.getReturnType();
         if (getGeneratedKeys == null) {
             return BatchReturner.newIntArrayReturner();
-        } else if (method.getReturnType().getErasedType().equals(int[].class)) {
-            return BatchReturner.newGeneratedIntReturner(getGeneratedKeys.columnName());
-        } else {
+        } else if (returnType != null && returnType.getErasedType().equals(long[].class)) {
             return BatchReturner.newGeneratedLongReturner(getGeneratedKeys.columnName());
+        } else {
+            return BatchReturner.newGeneratedIntReturner(getGeneratedKeys.columnName());
         }
     }
 
