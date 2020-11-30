@@ -280,6 +280,7 @@
                         <header>${project.basedir}/src/build/LICENSE-HEADER.txt</header>
                         <excludes combine.children="append">
                             <exclude>**/*.stg</exclude>
+                            <exclude>pom.xml</exclude>
                         </excludes>
                     </configuration>
                 </plugin>

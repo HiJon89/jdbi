@@ -13,6 +13,13 @@
  */
 package org.skife.jdbi.v2.sqlobject;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeTrue;
+
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -21,13 +28,6 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.mixins.CloseMe;
 import org.skife.jdbi.v2.tweak.HandleCallback;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
-
-import java.util.Arrays;
-import java.util.List;
 
 public class TestGetGeneratedKeysPostgres
 {
@@ -74,6 +74,10 @@ public class TestGetGeneratedKeysPostgres
         @GetGeneratedKeys(columnName = "id")
         public int[] insert(@Bind("name") List<String> names);
 
+        @SqlBatch("insert into something (name, id) values (:name, nextval('id_sequence'))")
+        @GetGeneratedKeys(columnName = "id")
+        public long[] insertReturnLongArray(@Bind List<String> names);
+
         @SqlQuery("select name from something where id = :it")
         public String findNameById(@Bind long id);
     }
@@ -97,6 +101,19 @@ public class TestGetGeneratedKeysPostgres
         DAO dao = dbi.open(DAO.class);
 
         int[] ids = dao.insert(Arrays.asList("Burt", "Macklin"));
+
+        assertThat(dao.findNameById(ids[0]), equalTo("Burt"));
+        assertThat(dao.findNameById(ids[1]), equalTo("Macklin"));
+
+        dao.close();
+    }
+
+    @Test
+    public void testBatchWithLongArray() throws Exception
+    {
+        DAO dao = dbi.open(DAO.class);
+
+        long[] ids = dao.insertReturnLongArray(Arrays.asList("Burt", "Macklin"));
 
         assertThat(dao.findNameById(ids[0]), equalTo("Burt"));
         assertThat(dao.findNameById(ids[1]), equalTo("Macklin"));
