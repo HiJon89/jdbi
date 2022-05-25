@@ -30,9 +30,11 @@ import org.skife.jdbi.v2.TransactionCallback;
 import org.skife.jdbi.v2.TransactionStatus;
 import org.skife.jdbi.v2.exceptions.UnableToCreateSqlObjectException;
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
+import org.skife.jdbi.v2.sqlobject.batch.BatchAccumulator;
+import org.skife.jdbi.v2.sqlobject.batch.BatchReturner;
 import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
-import org.skife.jdbi.v2.util.IntegerColumnMapper;
 
+import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.members.ResolvedMethod;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -42,7 +44,7 @@ class BatchHandler extends CustomizingStatementHandler
     private final String  sql;
     private final boolean transactional;
     private final ChunkSizeFunction batchChunkSize;
-    private final Returner returner;
+    private final BatchReturner<?> batchReturner;
 
     BatchHandler(Class<?> sqlObjectType, ResolvedMethod method)
     {
@@ -55,37 +57,18 @@ class BatchHandler extends CustomizingStatementHandler
         this.sql = SqlObject.getSql(anno, raw_method);
         this.transactional = anno.transactional();
         this.batchChunkSize = determineBatchChunkSize(sqlObjectType, raw_method);
-        final GetGeneratedKeys getGeneratedKeys = raw_method.getAnnotation(GetGeneratedKeys.class);
+        this.batchReturner = newBatchReturner(method);
+    }
+
+    private static BatchReturner<?> newBatchReturner(ResolvedMethod method) {
+        GetGeneratedKeys getGeneratedKeys = method.getRawMember().getAnnotation(GetGeneratedKeys.class);
+        ResolvedType returnType = method.getReturnType();
         if (getGeneratedKeys == null) {
-            returner = new Returner()
-            {
-                @Override
-                public int[] value(PreparedBatch batch)
-                {
-                    return batch.execute();
-                }
-            };
-        }
-        else if (getGeneratedKeys.columnName().isEmpty()) {
-            returner = new Returner()
-            {
-                @Override
-                public int[] value(PreparedBatch batch)
-                {
-                    return toPrimitiveArray(batch.executeAndGenerateKeys(IntegerColumnMapper.PRIMITIVE).list());
-                }
-            };
-        }
-        else {
-            returner = new Returner()
-            {
-                @Override
-                public int[] value(PreparedBatch batch)
-                {
-                    String columnName = getGeneratedKeys.columnName();
-                    return toPrimitiveArray(batch.executeAndGenerateKeys(IntegerColumnMapper.PRIMITIVE, columnName).list());
-                }
-            };
+            return BatchReturner.newIntArrayReturner();
+        } else if (returnType != null && returnType.getErasedType().equals(long[].class)) {
+            return BatchReturner.newGeneratedLongReturner(getGeneratedKeys.columnName());
+        } else {
+            return BatchReturner.newGeneratedIntReturner(getGeneratedKeys.columnName());
         }
     }
 
@@ -180,7 +163,7 @@ class BatchHandler extends CustomizingStatementHandler
         }
 
         int processed = 0;
-        List<int[]> rs_parts = new ArrayList<int[]>();
+        BatchAccumulator batchAccumulator = batchReturner.newAccumulator();
 
         PreparedBatch batch = handle.prepareBatch(sql);
         applyCustomizers(batch, args);
@@ -194,7 +177,7 @@ class BatchHandler extends CustomizingStatementHandler
             if (++processed == chunk_size) {
                 // execute this chunk
                 processed = 0;
-                rs_parts.add(executeBatch(handle, batch));
+                batchAccumulator.add(executeBatch(handle, batch));
                 batch = handle.prepareBatch(sql);
                 applyCustomizers(batch, args);
             }
@@ -202,51 +185,29 @@ class BatchHandler extends CustomizingStatementHandler
 
         //execute the rest
         if (batch.getSize() > 0) {
-            rs_parts.add(executeBatch(handle, batch));
+            batchAccumulator.add(executeBatch(handle, batch));
         }
 
-        // combine results
-        int end_size = 0;
-        for (int[] rs_part : rs_parts) {
-            end_size += rs_part.length;
-        }
-        int[] rs = new int[end_size];
-        int offset = 0;
-        for (int[] rs_part : rs_parts) {
-            System.arraycopy(rs_part, 0, rs, offset, rs_part.length);
-            offset += rs_part.length;
-        }
-
-        return rs;
+        return batchAccumulator.getResult();
     }
 
-    private int[] executeBatch(final Handle handle, final PreparedBatch batch)
+    private Object executeBatch(final Handle handle, final PreparedBatch batch)
     {
         if (!handle.isInTransaction() && transactional) {
             // it is safe to use same prepared batch as the inTransaction passes in the same
             // Handle instance.
-            return handle.inTransaction(new TransactionCallback<int[]>()
+            return handle.inTransaction(new TransactionCallback<Object>()
             {
                 @Override
-                public int[] inTransaction(Handle conn, TransactionStatus status) throws Exception
+                public Object inTransaction(Handle conn, TransactionStatus status) throws Exception
                 {
-                    return returner.value(batch);
+                    return batchReturner.executeBatch(batch);
                 }
             });
         }
         else {
-            return returner.value(batch);
+            return batchReturner.executeBatch(batch);
         }
-    }
-
-    private static int[] toPrimitiveArray(List<Integer> list)
-    {
-        int[] array = new int[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            array[i] = list.get(i);
-        }
-
-        return array;
     }
 
     private static Object[] next(List<Iterator> args)
@@ -261,11 +222,6 @@ class BatchHandler extends CustomizingStatementHandler
             }
         }
         return rs.toArray();
-    }
-
-    private interface Returner
-    {
-        int[] value(PreparedBatch batch);
     }
 
     private interface ChunkSizeFunction
@@ -304,7 +260,7 @@ class BatchHandler extends CustomizingStatementHandler
     }
 
     private static boolean returnTypeIsValid(Class<?> type) {
-        if (type.equals(Void.TYPE) || type.isArray() && type.getComponentType().equals(Integer.TYPE)) {
+        if (type.equals(Void.TYPE) || type.isArray() && (type.getComponentType().equals(Integer.TYPE) || type.getComponentType().equals(Long.TYPE))) {
             return true;
         }
 
