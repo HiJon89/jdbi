@@ -187,7 +187,9 @@ class BatchHandler extends CustomizingStatementHandler
         }
 
         //execute the rest
-        batchAccumulator.add(executeBatch(handle, batch));
+        if (batch.getSize() > 0) {
+            batchAccumulator.add(executeBatch(handle, batch));
+        }
 
         return batchAccumulator.getResult();
     }
