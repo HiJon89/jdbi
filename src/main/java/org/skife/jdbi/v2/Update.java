@@ -13,13 +13,7 @@
  */
 package org.skife.jdbi.v2;
 
-import org.skife.jdbi.v2.tweak.ResultColumnMapper;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import org.skife.jdbi.v2.tweak.SQLLog;
-import org.skife.jdbi.v2.tweak.StatementBuilder;
-import org.skife.jdbi.v2.tweak.StatementCustomizer;
-import org.skife.jdbi.v2.tweak.StatementLocator;
-import org.skife.jdbi.v2.tweak.StatementRewriter;
+import org.skife.jdbi.v2.tweak.*;
 import org.skife.jdbi.v2.util.SingleColumnMapper;
 
 import java.sql.SQLException;
@@ -67,10 +61,10 @@ public class Update extends SQLStatement<Update>
     }
 
     /**
-     * Execute the statement for a large number of affected rows
+     * Execute the statement when the count of affected rows could exceed INT_MAX, requiring a long
      * @return the number of rows modified
      */
-    public long executeLarge()
+    public long executeReturningLong()
     {
         try {
             return this.internalExecute(new QueryResultMunger<Long>() {

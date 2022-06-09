@@ -68,7 +68,7 @@ class UpdateHandler extends CustomizingStatementHandler
                     @Override
                     public Object value(Update update, HandleDing baton)
                     {
-                        return update.executeLarge();
+                        return update.executeReturningLong();
                     }
                 };
             } else {

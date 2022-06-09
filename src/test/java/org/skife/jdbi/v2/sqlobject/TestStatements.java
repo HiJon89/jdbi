@@ -94,13 +94,13 @@ public class TestStatements
     }
 
     @Test(expected = UnsupportedOperationException.class)
-    public void testUpdateLarge() throws Exception
+    public void testUpdateReturningLong() throws Exception
     {
         Inserter i = SqlObjectBuilder.open(dbi, Inserter.class);
         i.insertWithVoidReturn(1, "Danny");
         Updater u = SqlObjectBuilder.open(dbi, Updater.class);
 
-        u.updateLarge("Diego");
+        u.updateReturningLong("Diego");
 
         // Exception should be thrown because default impl of java.sql.Statement
         // which is used in these tests does not support getLargeUpdateCount
@@ -128,7 +128,7 @@ public class TestStatements
         public int update(@Bind("name") String name);
 
         @SqlUpdate("update something set name = :name")
-        public long updateLarge(@Bind("name") String name);
+        public long updateReturningLong(@Bind("name") String name);
     }
 
     public interface Doubler
