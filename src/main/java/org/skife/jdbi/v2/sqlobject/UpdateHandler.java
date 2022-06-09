@@ -60,14 +60,25 @@ class UpdateHandler extends CustomizingStatementHandler
             };
         }
         else {
-            this.returner = new Returner()
-            {
-                @Override
-                public Object value(Update update, HandleDing baton)
+            if (method.getReturnType() != null && (
+                    method.getReturnType().getErasedType().equals(Long.class) ||
+                            method.getReturnType().getErasedType().equals(Long.TYPE))) {
+                this.returner = new Returner()
                 {
-                    return update.execute();
-                }
-            };
+                    @Override
+                    public Object value(Update update, HandleDing baton)
+                    {
+                        return update.executeLarge();
+                    }
+                };
+            } else {
+                this.returner = new Returner() {
+                    @Override
+                    public Object value(Update update, HandleDing baton) {
+                        return update.execute();
+                    }
+                };
+            }
         }
     }
 

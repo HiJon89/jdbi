@@ -82,6 +82,31 @@ public class TestStatements
     }
 
     @Test
+    public void testUpdate() throws Exception
+    {
+        Inserter i = SqlObjectBuilder.open(dbi, Inserter.class);
+        i.insertWithVoidReturn(1, "Danny");
+        Updater u = SqlObjectBuilder.open(dbi, Updater.class);
+
+        int updated = u.update("Diego");
+
+        assertEquals(updated, 1);
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testUpdateLarge() throws Exception
+    {
+        Inserter i = SqlObjectBuilder.open(dbi, Inserter.class);
+        i.insertWithVoidReturn(1, "Danny");
+        Updater u = SqlObjectBuilder.open(dbi, Updater.class);
+
+        u.updateLarge("Diego");
+
+        // Exception should be thrown because default impl of java.sql.Statement
+        // which is used in these tests does not support getLargeUpdateCount
+    }
+
+    @Test
     public void testDoubleArgumentBind() throws Exception
     {
         Doubler d = dbi.open(Doubler.class);
@@ -95,6 +120,15 @@ public class TestStatements
 
         @SqlUpdate("insert into something (id, name) values (:id, :name)")
         public void insertWithVoidReturn(@Bind("id") long id, @Bind("name") String name);
+    }
+
+    public static interface Updater extends CloseMe
+    {
+        @SqlUpdate("update something set name = :name")
+        public int update(@Bind("name") String name);
+
+        @SqlUpdate("update something set name = :name")
+        public long updateLarge(@Bind("name") String name);
     }
 
     public interface Doubler

@@ -67,6 +67,26 @@ public class Update extends SQLStatement<Update>
     }
 
     /**
+     * Execute the statement for a large number of affected rows
+     * @return the number of rows modified
+     */
+    public long executeLarge()
+    {
+        try {
+            return this.internalExecute(new QueryResultMunger<Long>() {
+                @Override
+                public Long munge(Statement results) throws SQLException
+                {
+                    return results.getLargeUpdateCount();
+                }
+            });
+        }
+        finally {
+            cleanup();
+        }
+    }
+
+    /**
      * Execute the statement and returns any auto-generated keys. This requires the JDBC driver to support
      * the {@link Statement#getGeneratedKeys()} method.
      * @param mapper the mapper to generate the resulting key object
